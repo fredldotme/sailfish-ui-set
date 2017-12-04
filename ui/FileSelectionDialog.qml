@@ -3,10 +3,14 @@ import Sailfish.Silica 1.0
 import SailfishUiSet 1.0
 
 Dialog {
+    id: dialogRoot
+
     property int maximumSelections : 1
     property var filesToSelect : [];
     property string remotePath : "";
     property int __numSelect : 0
+    property string acceptText : header.defaultAcceptText
+    property string cancelText : header.defaultCancelText
 
     function getIconFromMime(mimeType) {
         if(mimeType.indexOf("image") === 0) {
@@ -62,8 +66,8 @@ Dialog {
 
         DialogHeader {
             id: header
-            acceptText: qsTr("Upload")
-            cancelText: qsTr("Cancel")
+            acceptText: dialogRoot.acceptText
+            cancelText: dialogRoot.cancelText
         }
 
         SilicaListView {
