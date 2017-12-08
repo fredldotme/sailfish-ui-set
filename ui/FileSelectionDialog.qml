@@ -12,22 +12,13 @@ Dialog {
     property string acceptText : header.defaultAcceptText
     property string cancelText : header.defaultCancelText
 
-    function getIconFromMime(mimeType) {
-        if(mimeType.indexOf("image") === 0) {
-            return "image://theme/icon-l-image";
-        } else if(mimeType.indexOf("audio") === 0) {
-            return "image://theme/icon-l-music";
-        } else if(mimeType.indexOf("video") === 0) {
-            return "image://theme/icon-l-video";
-        } else {
-            return "image://theme/icon-l-document";
-        }
-    }
-
     canAccept: __numSelect > 0;
 
     LocalFileBrowser {
         id: fileBrowser
+    }
+    FileDetailsHelper {
+        id: fileDetailsHelper
     }
 
     NumberAnimation {
@@ -96,7 +87,7 @@ Dialog {
                                     "image://theme/icon-m-folder" :
                                     "image://theme/icon-m-back"
                                  ) :
-                                getIconFromMime(listView.model[index].mimeType)
+                                fileDetailsHelper.getIconFromMime(listView.model[index].mimeType)
                     anchors.left: parent.left
                     anchors.leftMargin: Theme.paddingLarge
                     anchors.top: parent.top
