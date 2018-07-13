@@ -6,7 +6,7 @@ Dialog {
     id: dialogRoot
     canAccept: dirName.text !== "";
 
-    property alias selectedText : dirName.text
+    property alias text : dirName.text
     property string acceptText : header.defaultAcceptText
     property string cancelText : header.defaultCancelText
     property string placeholderText : ""
