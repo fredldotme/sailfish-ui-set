@@ -4,13 +4,17 @@ import harbour.owncloud 1.0
 
 Dialog {
     id: dialogRoot
-    canAccept: dirName.text !== "";
+    canAccept: textEntryField.text !== "";
 
-    property alias text : dirName.text
+    property alias text : textEntryField.text
     property string acceptText : header.defaultAcceptText
     property string cancelText : header.defaultCancelText
     property string placeholderText : ""
     property string labelText : ""
+
+    onDone: {
+        textEntryField.focus = false
+    }
 
     SilicaFlickable {
         anchors.fill: parent
@@ -22,7 +26,7 @@ Dialog {
         }
 
         TextField {
-            id: dirName
+            id: textEntryField
             anchors.centerIn: parent
             width: parent.width - 64
             focus: true
