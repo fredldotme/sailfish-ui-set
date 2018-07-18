@@ -7,8 +7,6 @@
 #include "localfilebrowser.h"
 #include "filedetailshelper.h"
 
-Q_DECLARE_METATYPE(LocalFileBrowser*)
-
 namespace SailfishUiSet {
 void registerQmlTypes() {
     qmlRegisterType<EntryInfo>("SailfishUiSet", 1, 0, "EntryInfo");

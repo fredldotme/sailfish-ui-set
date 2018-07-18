@@ -52,5 +52,6 @@ signals:
 public slots:
 
 };
+Q_DECLARE_METATYPE(EntryInfo*)
 
 #endif // ENTRYINFO_H

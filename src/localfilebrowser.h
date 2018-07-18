@@ -28,5 +28,6 @@ signals:
 public slots:
 
 };
+Q_DECLARE_METATYPE(LocalFileBrowser*)
 
 #endif // LOCALFILEBROWSER_H
