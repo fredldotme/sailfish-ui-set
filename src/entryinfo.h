@@ -2,8 +2,8 @@
 #define ENTRYINFO_H
 
 #include <QObject>
+#include <QString>
 #include <QDateTime>
-#include <QDebug>
 
 class EntryInfo : public QObject
 {
