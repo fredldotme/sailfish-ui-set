@@ -92,13 +92,15 @@ Dialog {
                     anchors.leftMargin: Theme.paddingLarge
                     anchors.top: parent.top
                     anchors.topMargin: 18
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 18
                     height: label.height
                     fillMode: Image.PreserveAspectFit
                 }
 
                 Label {
                     id: label
-                    x: icon.x + icon.width + 6
+                    x: icon.x + icon.width + 12
                     y: icon.y - icon.height + 6
                     visible: listView.model[index].name !== ".."
                     text: listView.model[index].name
