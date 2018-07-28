@@ -11,6 +11,7 @@ public:
 
 public slots:
     QString getHRSize(quint64 bytes);
+    QString getHRSizeFromString(QString byteString);
     QString getIconFromMime(const QString& mimeType);
 };
 

@@ -21,9 +21,14 @@ QString FileDetailsHelper::getHRSize(quint64 bytes) {
     const QStringList units = {"bytes", "kB", "MB", "GB", "TB"};
     quint64 i = 0;
 
-    for(; i < 5 && bytes >= 1024; i++) {
+    for(; i < units.length() && bytes >= 1024; i++) {
         bytes = bytes / 1024;
     }
 
     return QString::number((double)bytes, 'f', 2) + " " + units[i];
+}
+
+QString FileDetailsHelper::getHRSizeFromString(QString byteString) {
+    quint64 bytes = byteString.toULongLong();
+    return getHRSize(bytes);
 }
