@@ -15,3 +15,9 @@ DEPENDPATH += $$PWD/src
 
 RESOURCES += \
     $$PWD/sailfish-ui-set.qrc
+
+lupdate_only {
+    OTHER_FILES += \
+        $$PWD/ui/FileSelectionDialog.qml \
+        $$PWD/ui/TextEntryDialog.qml
+}

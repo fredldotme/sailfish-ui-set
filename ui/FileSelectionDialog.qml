@@ -8,48 +8,60 @@ Dialog {
     property int maximumSelections : 1
     property var filesToSelect : [];
     property string remotePath : "";
-    property int __numSelect : 0
+    property bool externalStorage : true
     property string acceptText : header.defaultAcceptText
     property string cancelText : header.defaultCancelText
+
+    signal errorOccured(string errorString)
+
+    property int __numSelect : 0
+    property var __volumes : []
+
+    function indexOfFilePath(path) {
+        for(var i = 0; i < filesToSelect.length; i++) {
+            var file = filesToSelect[i];
+            if (file.path === path)
+                return i;
+        }
+        return -1;
+    }
+
+    function isInFilesToSelect(path) {
+        return (indexOfFilePath(path) >= 0)
+    }
+
+    function refreshVolumes() {
+        if (!externalStorage)
+            return;
+
+        var newVolumes = fileBrowser.mountedVolumes()
+        if ((newVolumes.length) === __volumes.length)
+            return
+
+        sdCardMenuItem.visible = (newVolumes.length >= 2)
+        usbOtgMenuItem.visible = (newVolumes.length >= 3)
+        __volumes = newVolumes
+        storageSelection.currentIndex = 0
+    }
+
+    Component.onCompleted: {
+        refreshVolumes()
+    }
 
     canAccept: __numSelect > 0;
 
     LocalFileBrowser {
         id: fileBrowser
+        onContentChanged: {
+            listView.state = "loadingDone"
+        }
+        onErrorOccured: {
+            listView.state = "loadingDone"
+            errorOccured(error)
+        }
     }
     FileDetailsHelper {
         id: fileDetailsHelper
-    }
-
-    NumberAnimation {
-        id: outAnimation
-        target: listView
-        property: "opacity"
-        duration: 100
-        easing.type: Easing.InOutQuad
-        from: 1.0
-        to: 0.0
-        running: false
-
-        onStopped: {
-            listView.model = fileBrowser.cd(fileBrowser.path);
-            inAnimation.start()
-        }
-    }
-
-    NumberAnimation {
-        id: inAnimation
-        target: listView
-        property: "opacity"
-        duration: 100
-        easing.type: Easing.OutInQuad
-        from: 0.0
-        to: 1.0
-        running: false
-
-        onStopped: {
-            listView.enabled = true;
-        }
     }
 
     SilicaFlickable {
@@ -61,33 +73,101 @@ Dialog {
             cancelText: dialogRoot.cancelText
         }
 
+        ComboBox {
+            id: storageSelection
+            anchors.top: header.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            visible: externalStorage
+            currentIndex: 0
+            label: qsTr("Storage:")
+            onClicked: refreshVolumes()
+
+            menu: ContextMenu {
+                MenuItem {
+                    id: userDirMenuItem
+                    text: qsTr("Home directory")
+                }
+                MenuItem {
+                    id: sdCardMenuItem
+                    text: qsTr("External storage")
+                }
+                MenuItem {
+                    id: usbOtgMenuItem
+                    text: qsTr("External storage (2)")
+                }
+            }
+
+            onCurrentIndexChanged: {
+                console.debug("currentIndex changed: " + currentIndex)
+                var currentVolume = __volumes[currentIndex % __volumes.length]
+                var newPath = currentVolume.rootPath
+                fileBrowser.cd(newPath)
+            }
+        }
+
         SilicaListView {
             id: listView
             clip: true
-            y: header.y + header.height
-            width: parent.width
-            height: parent.height - y
-            model: fileBrowser.cd()
+            anchors.top: storageSelection.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            model: fileBrowser.content
+            state: "loadingDone"
+            enabled: (state === "loadingDone")
+            states: [
+                State { name: "loading" },
+                State { name: "loadingDone" }
+            ]
+            transitions: [
+                Transition {
+                    from: "loading"
+                    to: "loadingDone"
+                    NumberAnimation {
+                        target: listView
+                        property: "opacity"
+                        duration: 100
+                        easing.type: Easing.InOutQuad
+                        from: 0.0
+                        to: 1.0
+                    }
+                },
+                Transition {
+                    from: "loadingDone"
+                    to: "loading"
+                    NumberAnimation {
+                        target: listView
+                        property: "opacity"
+                        duration: 100
+                        easing.type: Easing.InOutQuad
+                        from: 1.0
+                        to: 0.0
+                    }
+                }
+            ]
 
             delegate: BackgroundItem {
                 id: delegate
 
+                property var selectedEntry : listView.model[index]
+
                 Rectangle {
                     id: highlighting
                     color: Theme.highlightColor
-                    visible: filesToSelect.indexOf(listView.model[index].path) >= 0;
+                    visible: isInFilesToSelect(selectedEntry.path);
                     anchors.fill: parent
                     opacity: 0.5
                 }
 
                 Image {
                     id: icon
-                    source: listView.model[index].isDirectory ?
-                                (listView.model[index].name !== ".." ?
+                    source: selectedEntry.isDirectory ?
+                                (selectedEntry.name !== ".." ?
                                     "image://theme/icon-m-folder" :
                                     "image://theme/icon-m-back"
                                  ) :
-                                fileDetailsHelper.getIconFromMime(listView.model[index].mimeType)
+                                fileDetailsHelper.getIconFromMime(selectedEntry.mimeType)
                     anchors.left: parent.left
                     anchors.leftMargin: Theme.paddingLarge
                     anchors.top: parent.top
@@ -102,26 +182,26 @@ Dialog {
                     id: label
                     x: icon.x + icon.width + 12
                     y: icon.y - icon.height + 6
-                    visible: listView.model[index].name !== ".."
-                    text: listView.model[index].name
+                    visible: selectedEntry.name !== ".."
+                    text: selectedEntry.name
                     anchors.verticalCenter: parent.verticalCenter
                     color: delegate.highlighted ? Theme.highlightColor : Theme.primaryColor
                 }
 
                 onClicked: {
-                    var tmpPath = listView.model[index].path;
-                    if (listView.model[index].isDirectory) {
-                        fileBrowser.path = tmpPath;
-                        listView.enabled = false;
-                        outAnimation.start()
+                    var tmpPath = selectedEntry.path;
+                    if (selectedEntry.isDirectory) {
+                        listView.state = "loading"
+                        fileBrowser.cd(tmpPath)
                     } else { // isFile
-                        var selectionIndex = filesToSelect.indexOf(tmpPath);
+                        var selectionIndex = indexOfFilePath(tmpPath)
                         if (selectionIndex >= 0) {
                             filesToSelect.splice(selectionIndex, 1);
+                            highlighting.visible = false
                         } else if (filesToSelect.length < maximumSelections){
-                            filesToSelect.push(tmpPath);
+                            filesToSelect.push(selectedEntry);
+                            highlighting.visible = true
                         }
-                        highlighting.visible = filesToSelect.indexOf(tmpPath) >= 0;
                         __numSelect = filesToSelect.length;
                     }
                 }

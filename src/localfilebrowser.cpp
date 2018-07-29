@@ -1,13 +1,76 @@
 #include "localfilebrowser.h"
 
+#include <QDateTime>
+#include <QDebug>
+#include <QStorageInfo>
+
 LocalFileBrowser::LocalFileBrowser(QObject *parent) :
     QObject(parent)
 {
+    cd();
 }
 
-QVariantList LocalFileBrowser::cd()
+void LocalFileBrowser::cd()
 {
-    return cd(QStandardPaths::writableLocation(QStandardPaths::HomeLocation));
+    cd(QStandardPaths::writableLocation(QStandardPaths::HomeLocation),
+              QStandardPaths::writableLocation(QStandardPaths::HomeLocation));
+}
+
+void LocalFileBrowser::cd(QString newPath)
+{
+    cd(newPath, pathRestriction());
+}
+
+QVariantList LocalFileBrowser::mountedVolumes()
+{
+    const QStringList allowedMountPoints {
+        QStringLiteral("/run/media/"), QStringLiteral("/media/"), QStringLiteral("/mnt/"),
+    };
+
+    QVariantList ret;
+
+    // Manually add home directory
+    {
+        QVariantMap homeEntry;
+        homeEntry.insert(QStringLiteral("displayName"),
+                         QStandardPaths::displayName(QStandardPaths::HomeLocation));
+        homeEntry.insert(QStringLiteral("name"),
+                         QStandardPaths::displayName(QStandardPaths::HomeLocation));
+        homeEntry.insert(QStringLiteral("rootPath"),
+                         QStandardPaths::writableLocation(QStandardPaths::HomeLocation));
+        ret.append(homeEntry);
+    }
+
+    for (const QStorageInfo& volume : QStorageInfo::mountedVolumes()) {
+        if (!volume.isValid() || volume.isRoot())
+            continue;
+
+        bool allowed = false;
+        for (const QString allowedMountPoint : allowedMountPoints) {
+            if (volume.rootPath().startsWith(allowedMountPoint)) {
+                allowed = true;
+                break;
+            }
+        }
+        if (!allowed)
+            continue;
+
+        QVariantMap entry;
+        entry.insert(QStringLiteral("displayName"), volume.displayName());
+        entry.insert(QStringLiteral("name"), volume.name());
+        entry.insert(QStringLiteral("rootPath"), volume.rootPath());
+        entry.insert(QStringLiteral("device"), volume.device());
+        entry.insert(QStringLiteral("fileSystemType"), volume.fileSystemType());
+        entry.insert(QStringLiteral("isReadOnly"), volume.isReadOnly());
+        entry.insert(QStringLiteral("isReady"), volume.isReady());
+        entry.insert(QStringLiteral("blockSize"), volume.blockSize());
+        entry.insert(QStringLiteral("bytesAvailable"), volume.bytesAvailable());
+        entry.insert(QStringLiteral("bytesFree"), volume.bytesFree());
+        entry.insert(QStringLiteral("bytesTotal"), volume.bytesTotal());
+
+        ret.append(entry);
+    }
+    return ret;
 }
 
 QString LocalFileBrowser::path()
@@ -17,32 +80,77 @@ QString LocalFileBrowser::path()
 
 void LocalFileBrowser::setPath(QString value)
 {
-    m_path = value;
+    if (this->m_path == value)
+        return;
+
+    this->m_path = value;
+    Q_EMIT pathChanged();
 }
 
-QVariantList LocalFileBrowser::cd(QString path)
+QString LocalFileBrowser::pathRestriction()
 {
-    QDir dir(path);
-    m_path = dir.absolutePath();
-    QVariantList ret;
-    foreach (QFileInfo info, dir.entryInfoList(QDir::NoFilter, QDir::DirsFirst | QDir::Name)) {
-        if(info.fileName() == ".." &&
-                m_path == QStandardPaths::writableLocation(QStandardPaths::HomeLocation)) {
+    return m_pathRestriction;
+}
+
+void LocalFileBrowser::setPathRestriction(QString value)
+{
+    if (this->m_pathRestriction == value)
+        return;
+
+    this->m_pathRestriction = value;
+    Q_EMIT pathRestrictionChanged();
+}
+
+QVariantList LocalFileBrowser::content()
+{
+    return this->m_content;
+}
+
+void LocalFileBrowser::setContent(QVariantList content)
+{
+    if (this->m_content == content)
+        return;
+
+    this->m_content = content;
+    Q_EMIT contentChanged();
+}
+
+void LocalFileBrowser::cd(QString newPath, QString pathRestriction)
+{
+    QVariantList dirContent;
+
+    const QDir dir(newPath);
+    if (!dir.isReadable()) {
+        Q_EMIT errorOccured("Permission denied");
+        return;
+    }
+
+    const QDir restrictionDir(pathRestriction);
+    setPathRestriction(pathRestriction);
+
+
+    const QFileInfoList newPathContent =
+            dir.entryInfoList(QDir::NoFilter, QDir::Name | QDir::DirsFirst);
+
+    for (const QFileInfo& info : newPathContent) {
+        if (info.fileName() == QStringLiteral("..") &&
+                dir.absolutePath() == restrictionDir.absolutePath())
             continue;
-        }
 
         if (info.fileName() == QStringLiteral("."))
             continue;
 
         QVariantMap entry;
 
-        entry.insert("directory", info.isDir());
-        entry.insert("name", info.fileName());
-        entry.insert("path", info.absoluteFilePath());
-        entry.insert("lastModified", info.lastModified());
-        entry.insert("created", info.created());
+        entry.insert(QStringLiteral("isDirectory"), info.isDir());
+        entry.insert(QStringLiteral("name"), info.fileName());
+        entry.insert(QStringLiteral("path"), info.absoluteFilePath());
+        entry.insert(QStringLiteral("lastModified"), info.lastModified());
+        entry.insert(QStringLiteral("created"), info.created());
 
-        ret.append(entry);
+        dirContent.append(entry);
     }
-    return ret;
+
+    setPath(dir.absolutePath());
+    setContent(dirContent);
 }
