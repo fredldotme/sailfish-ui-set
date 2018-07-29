@@ -31,16 +31,18 @@ QVariantList LocalFileBrowser::cd(QString path)
             continue;
         }
 
-        if(info.fileName() != ".") {
-            EntryInfo *entry = new EntryInfo();
-            entry->setDirectory(info.isDir());
-            entry->setName(info.fileName());
-            entry->setPath(info.absoluteFilePath());
+        if (info.fileName() == QStringLiteral("."))
+            continue;
 
-            QVariant variant;
-            variant.setValue(entry);
-            ret.append(variant);
-        }
+        QVariantMap entry;
+
+        entry.insert("directory", info.isDir());
+        entry.insert("name", info.fileName());
+        entry.insert("path", info.absoluteFilePath());
+        entry.insert("lastModified", info.lastModified());
+        entry.insert("created", info.created());
+
+        ret.append(entry);
     }
     return ret;
 }

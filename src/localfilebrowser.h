@@ -5,7 +5,6 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QVariantList>
-#include "entryinfo.h"
 
 class LocalFileBrowser : public QObject
 {
@@ -22,10 +21,6 @@ private:
     QString m_path;
     QString path();
     void setPath(QString value);
-
-signals:
-
-public slots:
 
 };
 Q_DECLARE_METATYPE(LocalFileBrowser*)
