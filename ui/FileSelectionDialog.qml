@@ -57,7 +57,7 @@ Dialog {
         }
         onErrorOccured: {
             listView.state = "loadingDone"
-            errorOccured(error)
+            dialogRoot.errorOccured(error)
         }
     }
     FileDetailsHelper {
@@ -102,7 +102,7 @@ Dialog {
                 console.debug("currentIndex changed: " + currentIndex)
                 var currentVolume = __volumes[currentIndex % __volumes.length]
                 var newPath = currentVolume.rootPath
-                fileBrowser.cd(newPath)
+                fileBrowser.cd(newPath, newPath)
             }
         }
 
