@@ -19,7 +19,7 @@ QString FileDetailsHelper::getIconFromMime(const QString& mimeType) {
 
 QString FileDetailsHelper::getHRSize(quint64 bytes) {
     const QStringList units = {"bytes", "kB", "MB", "GB", "TB"};
-    quint64 i = 0;
+    int i = 0;
 
     for(; i < units.length() && bytes >= 1024; i++) {
         bytes = bytes / 1024;
