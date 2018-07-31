@@ -169,19 +169,20 @@ Dialog {
                                  ) :
                                 fileDetailsHelper.getIconFromMime(selectedEntry.mimeType)
                     anchors.left: parent.left
-                    anchors.leftMargin: Theme.paddingLarge
+                    anchors.leftMargin: Theme.horizontalPageMargin
                     anchors.top: parent.top
-                    anchors.topMargin: 18
+                    anchors.topMargin: Theme.paddingSmall
                     anchors.bottom: parent.bottom
-                    anchors.bottomMargin: 18
+                    anchors.bottomMargin: Theme.paddingSmall
                     height: label.height
                     fillMode: Image.PreserveAspectFit
                 }
 
                 Label {
                     id: label
-                    x: icon.x + icon.width + 12
-                    y: icon.y - icon.height + 6
+                    anchors.left: icon.right
+                    anchors.leftMargin: Theme.paddingMedium
+                    anchors.right: parent.right
                     visible: selectedEntry.name !== ".."
                     text: selectedEntry.name
                     anchors.verticalCenter: parent.verticalCenter
